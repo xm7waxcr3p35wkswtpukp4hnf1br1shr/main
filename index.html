@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="keywords" content="gothviolence, gothviolence.com" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>gothviolence.com</title>
+    <style>
+        .bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: black;
+            transition: opacity 1s ease-in-out;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            box-sizing: border-box;
+            background-color: black;
+        }
+
+        a {
+            display: flex;
+            flex: 0 1 auto;
+        }
+
+        img {
+            max-width: 30vw;
+            max-height: 45vh;
+            object-fit: contain;
+        }
+
+        .budka {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            display: flex;
+            padding: 0;
+            background: transparent;
+        }
+
+        .budka img {
+            width: 80px;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="bg1" class="bg-layer" style="opacity: 1;"></div>
+    <div id="bg2" class="bg-layer" style="opacity: 0;"></div>
+
+    <a href="md/index/handler.html?v=vid_1.mp4">
+        <img src="image/index/door_1.png" alt="">
+    </a>
+    
+    <a href="md/index/handler.html?v=vid_2.mp4">
+        <img src="image/index/door_2.png" alt="">
+    </a>
+
+    <div class="budka">
+        <a href="https://t.me/channel_televisor" target="_blank" rel="noopener noreferrer">
+            <img src="image/index/budka.png" alt="">
+        </a>
+    </div>
+
+    <audio id="bg-track" src="md/index/aud_1.mp3" autoplay loop playsinline style="display: none;"></audio>
+
+    <script>
+        (function() {
+            const IMAGE_FOLDER = "image/index/";
+            const INTERVAL_MS = 2000;
+
+            const imageFilenames = [
+                "int_1.jpg", "int_3.jpg", "int_4.jpg", "int_5.jpg", "int_6.jpg",
+                "int_7.jpg", "int_8.jpg", "int_9.jpg", "int_10.jpg", "int_11.jpg",
+                "int_12.jpg", "int_13.jpg", "int_14.jpg", "int_15.jpg", "int_16.jpg",
+                "int_17.jpg", "int_18.jpg", "int_19.jpg", "int_20.jpg", "int_21.jpg",
+                "int_22.jpg", "int_23.jpg", "int_24.jpg", "int_25.jpg", "int_26.jpg",
+                "int_27.jpg", "int_28.jpg", "int_29.jpg", "int_30.jpg", "int_31.jpg",
+                "int_32.jpg", "int_33.jpg", "int_34.jpg", "int_35.jpg", "int_36.jpg",
+                "int_37.jpg", "int_38.jpg", "int_39.jpg", "int_40.jpg", "int_41.jpg",
+                "int_42.jpg"
+            ];
+
+            function shuffleArray(arr) {
+                const a = [...arr];
+                for (let i = a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            }
+
+            const shuffled = shuffleArray(imageFilenames);
+
+            const layer1 = document.getElementById('bg1');
+            const layer2 = document.getElementById('bg2');
+            const layers = [layer1, layer2];
+
+            if (!layer1 || !layer2) return;
+
+            imageFilenames.forEach(filename => {
+                (new Image()).src = IMAGE_FOLDER + filename;
+            });
+
+            let activeLayer = 0;
+            let currentImageIndex = 0;
+            let ready = false;
+
+            function switchToImage(newIndex) {
+                if (newIndex === currentImageIndex) return;
+                const nextLayer = 1 - activeLayer;
+                layers[nextLayer].style.backgroundImage = `url('${IMAGE_FOLDER + shuffled[newIndex]}')`;
+                layers[activeLayer].style.opacity = '0';
+                layers[nextLayer].style.opacity = '1';
+                activeLayer = nextLayer;
+                currentImageIndex = newIndex;
+            }
+
+            function setFirstImage(index) {
+                if (index >= shuffled.length) return;
+                const url = IMAGE_FOLDER + shuffled[index];
+                const img = new Image();
+                img.onload = () => {
+                    layers[activeLayer].style.backgroundImage = `url('${url}')`;
+                    layers[activeLayer].style.opacity = '1';
+                    layers[1 - activeLayer].style.opacity = '0';
+                    currentImageIndex = index;
+                    ready = true;
+                    startAnimation();
+                };
+                img.onerror = () => setFirstImage(index + 1);
+                img.src = url;
+            }
+
+            setFirstImage(0);
+
+            let lastChangeTime = performance.now();
+            let rafId = null;
+
+            function updateBackground(now) {
+                if (!ready) {
+                    rafId = requestAnimationFrame(updateBackground);
+                    return;
+                }
+                if (now - lastChangeTime >= INTERVAL_MS) {
+                    const steps = Math.floor((now - lastChangeTime) / INTERVAL_MS);
+                    const newIndex = (currentImageIndex + steps) % shuffled.length;
+                    if (newIndex !== currentImageIndex) {
+                        switchToImage(newIndex);
+                    }
+                    lastChangeTime = now;
+                }
+                rafId = requestAnimationFrame(updateBackground);
+            }
+
+            function startAnimation() {
+                if (rafId) cancelAnimationFrame(rafId);
+                lastChangeTime = performance.now();
+                rafId = requestAnimationFrame(updateBackground);
+            }
+
+            const audio = document.getElementById('bg-track');
+            if (audio) {
+                audio.play().catch(() => {
+                    const playOnClick = () => {
+                        audio.play().catch(() => {});
+                        document.removeEventListener('click', playOnClick);
+                    };
+                    document.addEventListener('click', playOnClick);
+                });
+
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && audio.paused) {
+                        audio.play().catch(() => {});
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

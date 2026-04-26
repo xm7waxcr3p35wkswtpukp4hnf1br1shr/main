@@ -25,22 +25,29 @@
         body {
             margin: 0;
             padding: 20px;
+            padding-top: 100px;
             min-height: 100vh;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             gap: 20px;
             box-sizing: border-box;
             background-color: black;
         }
 
-        a {
+        .doors-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .doors-row a {
             display: flex;
             flex: 0 1 auto;
         }
 
-        img {
+        .doors-row img {
             max-width: 30vw;
             max-height: 45vh;
             object-fit: contain;
@@ -49,7 +56,8 @@
         .budka {
             position: fixed;
             top: 0;
-            left: 0;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 10;
             display: flex;
             padding: 0;
@@ -63,11 +71,6 @@
         }
 
         .center-link {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 20;
             display: block;
             width: 300px;
             height: 300px;
@@ -76,8 +79,6 @@
         .center-link img {
             width: 300px;
             height: 300px;
-            max-width: unset;
-            max-height: unset;
             object-fit: contain;
         }
     </style>
@@ -86,22 +87,23 @@
     <div id="bg1" class="bg-layer" style="opacity: 1;"></div>
     <div id="bg2" class="bg-layer" style="opacity: 0;"></div>
 
-    <a href="md/index/handler.html?v=vid_1.mp4">
-        <img src="image/index/door_1.png" alt="">
-    </a>
-    
-    <a href="md/index/handler.html?v=vid_2.mp4">
-        <img src="image/index/door_2.png" alt="">
-    </a>
-
     <div class="budka">
         <a href="https://t.me/Santa_Claus_666" target="_blank" rel="noopener noreferrer">
             <img src="image/index/budka.png" alt="">
         </a>
     </div>
 
+    <div class="doors-row">
+        <a href="md/index/handler.html?v=vid_1.mp4">
+            <img src="image/index/door_1.png" alt="">
+        </a>
+        <a href="md/index/handler.html?v=vid_2.mp4">
+            <img src="image/index/door_2.png" alt="">
+        </a>
+    </div>
+
     <a href="https://t.me/ppb207" target="_blank" rel="noopener noreferrer" class="center-link">
-        <img src="image/index/center.png" alt="">
+        <img src="image/index/tshirt.png" alt="">
     </a>
 
     <audio id="bg-track" src="md/index/aud_1.mp3" autoplay loop playsinline style="display: none;"></audio>

@@ -61,6 +61,25 @@
             height: auto;
             display: block;
         }
+
+        .center-link {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            display: block;
+            width: 300px;
+            height: 300px;
+        }
+
+        .center-link img {
+            width: 300px;
+            height: 300px;
+            max-width: unset;
+            max-height: unset;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body>
@@ -80,6 +99,10 @@
             <img src="image/index/budka.png" alt="">
         </a>
     </div>
+
+    <a href="https://t.me/ppb207" target="_blank" rel="noopener noreferrer" class="center-link">
+        <img src="image/index/center_img.png" alt="">
+    </a>
 
     <audio id="bg-track" src="md/index/aud_1.mp3" autoplay loop playsinline style="display: none;"></audio>
 

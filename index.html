@@ -109,7 +109,7 @@
             const INTERVAL_MS = 2000;
 
             const imageFilenames = [
-                "int_1.jpg", "int_3.jpg", "int_4.jpg", "int_5.jpg", "int_6.jpg",
+                "int_1.jpg", "int_2.jpg", "int_3.jpg", "int_4.jpg", "int_5.jpg", "int_6.jpg",
                 "int_7.jpg", "int_8.jpg", "int_9.jpg", "int_10.jpg", "int_11.jpg",
                 "int_12.jpg", "int_13.jpg", "int_14.jpg", "int_15.jpg", "int_16.jpg",
                 "int_17.jpg", "int_18.jpg", "int_19.jpg", "int_20.jpg", "int_21.jpg",
@@ -184,12 +184,13 @@
                     const steps = Math.floor((now - lastChangeTime) / INTERVAL_MS);
                     let newIndex = currentImageIndex + steps;
 
-                    // Дошли до конца цикла — перемешиваем заново и начинаем сначала,
-                    // чтобы порядок каждый раз был новым, но без повторов внутри цикла.
-                    if (newIndex >= shuffled.length) {
+                    // Если пропущено больше одного полного цикла (например, вкладка долго
+                    // была неактивна), переперемешиваем нужное число раз, чтобы индекс
+                    // всегда оставался корректным и без повторов внутри цикла.
+                    while (newIndex >= shuffled.length) {
                         shuffled = shuffleArray(shuffled);
-                        newIndex = newIndex % shuffled.length;
-                        currentImageIndex = -1; // гарантируем, что switchToImage сработает даже если newIndex окажется 0
+                        newIndex -= shuffled.length;
+                        currentImageIndex = -1; // гарантируем срабатывание switchToImage
                     }
 
                     if (newIndex !== currentImageIndex) {
@@ -226,11 +227,15 @@
             const audio = document.getElementById('bg-track');
             if (audio) {
                 audio.play().catch(() => {
-                    const playOnClick = () => {
+                    const playOnInteraction = () => {
                         audio.play().catch(() => {});
-                        document.removeEventListener('click', playOnClick);
+                        document.removeEventListener('click', playOnInteraction);
+                        document.removeEventListener('touchstart', playOnInteraction);
+                        document.removeEventListener('keydown', playOnInteraction);
                     };
-                    document.addEventListener('click', playOnClick);
+                    document.addEventListener('click', playOnInteraction);
+                    document.addEventListener('touchstart', playOnInteraction);
+                    document.addEventListener('keydown', playOnInteraction);
                 });
 
                 document.addEventListener('visibilitychange', () => {

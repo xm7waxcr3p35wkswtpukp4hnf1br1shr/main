@@ -25,11 +25,11 @@
         body {
             margin: 0;
             padding: 20px;
-            padding-top: 100px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 20px;
             box-sizing: border-box;
             background-color: black;
@@ -54,11 +54,6 @@
         }
 
         .budka {
-            position: fixed;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
             display: flex;
             padding: 0;
             background: transparent;
@@ -124,7 +119,16 @@
                 "int_37.jpg", "int_38.jpg", "int_39.jpg", "int_40.jpg", "int_41.jpg",
                 "int_42.jpg", "int_43.jpg", "int_44.jpg", "int_45.jpg", "int_46.jpg",
                 "int_47.jpg", "int_48.jpg", "int_49.jpg", "int_50.jpg", "int_51.jpg",
-                "int_52.jpg"
+                "int_52.jpg", "int_53.jpg", "int_54.jpg", "int_55.jpg", "int_56.jpg",
+                "int_57.jpg", "int_58.jpg", "int_59.jpg", "int_60.jpg", "int_61.jpg",
+                "int_62.jpg", "int_63.jpg", "int_64.jpg", "int_65.jpg", "int_66.jpg",
+                "int_67.jpg", "int_68.jpg", "int_69.jpg", "int_70.jpg", "int_71.jpg",
+                "int_72.jpg", "int_73.jpg", "int_74.jpg", "int_75.jpg", "int_76.jpg",
+                "int_77.jpg", "int_78.jpg", "int_79.jpg", "int_80.jpg", "int_81.jpg",
+                "int_82.jpg", "int_83.jpg", "int_84.jpg", "int_85.jpg", "int_86.jpg",
+                "int_87.jpg", "int_88.jpg", "int_89.jpg", "int_90.jpg", "int_91.jpg",
+                "int_92.jpg", "int_93.jpg", "int_94.jpg", "int_95.jpg", "int_96.jpg",
+                "int_97.jpg", "int_98.jpg", "int_99.jpg", "int_100.jpg"
             ];
 
             function shuffleArray(arr) {
@@ -136,52 +140,40 @@
                 return a;
             }
 
-            const shuffled = shuffleArray(imageFilenames);
-
             const layer1 = document.getElementById('bg1');
             const layer2 = document.getElementById('bg2');
             const layers = [layer1, layer2];
 
             if (!layer1 || !layer2) return;
 
-            imageFilenames.forEach(filename => {
-                (new Image()).src = IMAGE_FOLDER + filename;
-            });
+            // Предзагружаем все картинки и оставляем в ротации только те,
+            // что реально загрузились (устраняет показ "битых" фонов).
+            function preloadImage(filename) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    const url = IMAGE_FOLDER + filename;
+                    img.onload = () => resolve(url);
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            }
 
+            let shuffled = [];
             let activeLayer = 0;
             let currentImageIndex = 0;
             let ready = false;
+            let lastChangeTime = performance.now();
+            let rafId = null;
 
             function switchToImage(newIndex) {
                 if (newIndex === currentImageIndex) return;
                 const nextLayer = 1 - activeLayer;
-                layers[nextLayer].style.backgroundImage = `url('${IMAGE_FOLDER + shuffled[newIndex]}')`;
+                layers[nextLayer].style.backgroundImage = `url('${shuffled[newIndex]}')`;
                 layers[activeLayer].style.opacity = '0';
                 layers[nextLayer].style.opacity = '1';
                 activeLayer = nextLayer;
                 currentImageIndex = newIndex;
             }
-
-            function setFirstImage(index) {
-                if (index >= shuffled.length) return;
-                const url = IMAGE_FOLDER + shuffled[index];
-                const img = new Image();
-                img.onload = () => {
-                    layers[activeLayer].style.backgroundImage = `url('${url}')`;
-                    layers[activeLayer].style.opacity = '1';
-                    layers[1 - activeLayer].style.opacity = '0';
-                    currentImageIndex = index;
-                    ready = true;
-                    startAnimation();
-                };
-                img.onerror = () => setFirstImage(index + 1);
-                img.src = url;
-            }
-
-            setFirstImage(0);
-
-            let lastChangeTime = performance.now();
-            let rafId = null;
 
             function updateBackground(now) {
                 if (!ready) {
@@ -190,7 +182,16 @@
                 }
                 if (now - lastChangeTime >= INTERVAL_MS) {
                     const steps = Math.floor((now - lastChangeTime) / INTERVAL_MS);
-                    const newIndex = (currentImageIndex + steps) % shuffled.length;
+                    let newIndex = currentImageIndex + steps;
+
+                    // Дошли до конца цикла — перемешиваем заново и начинаем сначала,
+                    // чтобы порядок каждый раз был новым, но без повторов внутри цикла.
+                    if (newIndex >= shuffled.length) {
+                        shuffled = shuffleArray(shuffled);
+                        newIndex = newIndex % shuffled.length;
+                        currentImageIndex = -1; // гарантируем, что switchToImage сработает даже если newIndex окажется 0
+                    }
+
                     if (newIndex !== currentImageIndex) {
                         switchToImage(newIndex);
                     }
@@ -204,6 +205,23 @@
                 lastChangeTime = performance.now();
                 rafId = requestAnimationFrame(updateBackground);
             }
+
+            Promise.allSettled(imageFilenames.map(preloadImage)).then((results) => {
+                shuffled = shuffleArray(
+                    results
+                        .filter(r => r.status === 'fulfilled' && r.value !== null)
+                        .map(r => r.value)
+                );
+
+                if (shuffled.length === 0) return;
+
+                layers[activeLayer].style.backgroundImage = `url('${shuffled[0]}')`;
+                layers[activeLayer].style.opacity = '1';
+                layers[1 - activeLayer].style.opacity = '0';
+                currentImageIndex = 0;
+                ready = true;
+                startAnimation();
+            });
 
             const audio = document.getElementById('bg-track');
             if (audio) {

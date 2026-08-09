@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
-    <title>Anonymous Message Board</title>
+    <title>Board</title>
     <style>
         * {
             box-sizing: border-box;
@@ -258,7 +258,7 @@
     </style>
 </head>
 <body>
-    <h1>Anonymous Message Board</h1>
+    <h1>Board</h1>
 
     <hr class="rule" />
     <div class="nav">
@@ -318,7 +318,6 @@
         let allPosts = [];
         let replyToId = null;
         let lastSubmitTime = 0;
-        const SUBMIT_COOLDOWN_MS = 15000;
         const BULLETS = ['&#9679;', '&#9675;', '&#9642;', '&#8226;']; // •, ◦, ▪, повтор дальше
 
         function escapeHtml(str) {
@@ -498,14 +497,7 @@
             }
 
             const subject = deriveSubject(message, !!replyToId);
-
-            const now = Date.now();
-            if (now - lastSubmitTime < SUBMIT_COOLDOWN_MS) {
-                const wait = Math.ceil((SUBMIT_COOLDOWN_MS - (now - lastSubmitTime)) / 1000);
-                fStatus.textContent = `wait ${wait}s before posting again`;
-                return;
-            }
-
+            
             isSubmitting = true;
             fStatus.textContent = 'posting...';
 

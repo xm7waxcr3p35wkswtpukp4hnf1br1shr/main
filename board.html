@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>Anonymous Message Board</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Times New Roman', Times, serif;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin: 10px 0 20px;
+        }
+
+        .rule {
+            border: none;
+            border-top: 3px double #fff;
+            max-width: 1200px;
+            margin: 10px auto;
+        }
+
+        .nav {
+            text-align: center;
+            margin: 10px auto;
+            font-size: 1rem;
+        }
+
+        .nav a, .nav button {
+            color: #6fa8ff;
+            text-decoration: underline;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: inherit;
+            padding: 0;
+        }
+
+        .nav a:visited, .nav button:visited {
+            color: #b28fff;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        ul.thread {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        ul.thread ul.thread {
+            padding-left: 28px;
+            margin-top: 4px;
+        }
+
+        li.post {
+            margin: 6px 0;
+        }
+
+        .bullet {
+            display: inline-block;
+            width: 14px;
+        }
+
+        .post-line a.subject {
+            color: #6fa8ff;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .post-line a.subject:visited {
+            color: #b28fff;
+        }
+
+        .author {
+            font-weight: bold;
+        }
+
+        .timestamp {
+            font-style: italic;
+        }
+
+        .count {
+            color: #ccc;
+        }
+
+        .reply-link, .toggle-link {
+            color: #999;
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-left: 6px;
+        }
+
+        .post-body {
+            margin: 4px 0 6px 16px;
+            padding: 8px 12px;
+            border-left: 2px solid #444;
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            color: #ddd;
+            display: none;
+        }
+
+        .post-body.open {
+            display: block;
+        }
+
+        /* --- форма --- */
+        .panel {
+            display: none;
+            max-width: 600px;
+            margin: 20px auto;
+            border: 1px solid #444;
+            padding: 16px;
+            background: #0a0a0a;
+        }
+
+        .panel.open {
+            display: block;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+        }
+
+        .panel label {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .panel input, .panel textarea {
+            width: 100%;
+            background: #111;
+            border: 1px solid #444;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 6px;
+            margin-top: 4px;
+        }
+
+        .panel textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .panel .reply-context {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .panel-buttons {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .panel-buttons button {
+            font-family: inherit;
+            background: #1a1a1a;
+            border: 1px solid #555;
+            color: #ddd;
+            padding: 6px 14px;
+            cursor: pointer;
+        }
+
+        .panel-buttons button:hover {
+            background: #262626;
+            color: #fff;
+        }
+
+        .panel-status {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 8px;
+            min-height: 1em;
+        }
+
+        /* honeypot */
+        .hp-field {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+        }
+
+        .faq-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .faq-text p {
+            margin: 0 0 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #555;
+            margin: 30px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Anonymous Message Board</h1>
+
+    <hr class="rule" />
+    <div class="nav">
+        [ <button id="postMsgBtn">Post Message</button> ]
+        [ <button id="faqBtn">FAQ</button> ]
+    </div>
+    <hr class="rule" />
+
+    <div class="wrap">
+
+        <!-- Панель: новое сообщение -->
+        <div class="panel" id="postPanel">
+            <h2>Post New Message</h2>
+            <div class="reply-context" id="replyContext"></div>
+            <label>Subject
+                <input type="text" id="fSubject" maxlength="200" />
+            </label>
+            <label>Message
+                <textarea id="fMessage" maxlength="5000"></textarea>
+            </label>
+            <input type="text" class="hp-field" id="fHp" tabindex="-1" autocomplete="off" />
+            <div class="panel-buttons">
+                <button id="fSubmit">Submit</button>
+                <button id="fCancel">Cancel</button>
+            </div>
+            <div class="panel-status" id="fStatus"></div>
+        </div>
+
+        <!-- Панель: FAQ -->
+        <div class="panel" id="faqPanel">
+            <h2>FAQ</h2>
+            <div class="faq-text">
+                <p><strong>Who can post here?</strong> Anyone. No registration required.</p>
+                <p><strong>Are posts moderated?</strong> No. Say what you came to say.</p>
+                <p><strong>How do I reply to a message?</strong> Click "reply" next to the message you want to answer.</p>
+                <p><strong>Can I delete my post?</strong> No. Once it's said, it's said.</p>
+            </div>
+        </div>
+
+        <div id="feed">
+            <div class="empty-state">loading...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const SUPABASE_URL = 'https://ufaiesagbyriyvqvxqyo.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_DULGiiO82jU3nOWVnFrt1Q_BTu3QTJy';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const feedEl = document.getElementById('feed');
+        const postPanel = document.getElementById('postPanel');
+        const faqPanel = document.getElementById('faqPanel');
+        const postMsgBtn = document.getElementById('postMsgBtn');
+        const faqBtn = document.getElementById('faqBtn');
+        const replyContextEl = document.getElementById('replyContext');
+        const fSubject = document.getElementById('fSubject');
+        const fMessage = document.getElementById('fMessage');
+        const fHp = document.getElementById('fHp');
+        const fSubmit = document.getElementById('fSubmit');
+        const fCancel = document.getElementById('fCancel');
+        const fStatus = document.getElementById('fStatus');
+
+        let allPosts = [];
+        let replyToId = null;
+        let lastSubmitTime = 0;
+        const SUBMIT_COOLDOWN_MS = 15000;
+        const BULLETS = ['&#9679;', '&#9675;', '&#9642;', '&#8226;']; // •, ◦, ▪, повтор дальше
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function generateAnonId() {
+            return Math.random().toString(16).slice(2, 6);
+        }
+
+        function formatTimestamp(dateStr) {
+            const d = new Date(dateStr);
+            const pad = (n) => String(n).padStart(2, '0');
+            const hh = pad(d.getHours());
+            const mm = pad(d.getMinutes());
+            const ss = pad(d.getSeconds());
+            const mo = pad(d.getMonth() + 1);
+            const dd = pad(d.getDate());
+            const yy = pad(d.getFullYear() % 100);
+            return `${hh}:${mm}:${ss} ${mo}/${dd}/${yy}`;
+        }
+
+        function buildTree(posts) {
+            const byId = new Map();
+            posts.forEach(p => byId.set(p.id, { ...p, children: [] }));
+            const roots = [];
+            byId.forEach(p => {
+                if (p.parent_id && byId.has(p.parent_id)) {
+                    byId.get(p.parent_id).children.push(p);
+                } else {
+                    roots.push(p);
+                }
+            });
+            // сортируем: новые сверху (как "бамп" по последней активности было бы сложнее, делаем по дате создания корня)
+            const sortDesc = (arr) => arr.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            sortDesc(roots);
+            byId.forEach(p => sortDesc(p.children));
+            return roots;
+        }
+
+        function countDescendants(node) {
+            let count = node.children.length;
+            for (const child of node.children) {
+                count += countDescendants(child);
+            }
+            return count;
+        }
+
+        function renderNode(node, depth) {
+            const bullet = BULLETS[Math.min(depth, BULLETS.length - 1)];
+            const total = countDescendants(node);
+            const li = document.createElement('li');
+            li.className = 'post';
+            li.innerHTML = `
+                <span class="bullet">${bullet}</span>
+                <a class="subject" data-id="${node.id}">${escapeHtml(node.subject)}</a>
+                - <span class="author">${escapeHtml(node.author)}</span>
+                <span class="timestamp">${formatTimestamp(node.created_at)}</span>
+                (${total})
+                <span class="reply-link" data-reply-id="${node.id}" data-reply-subject="${escapeHtml(node.subject)}">reply</span>
+                <div class="post-body" id="body-${node.id}">${escapeHtml(node.message)}</div>
+            `;
+
+            if (node.children.length > 0) {
+                const ul = document.createElement('ul');
+                ul.className = 'thread';
+                node.children.forEach(child => {
+                    ul.appendChild(renderNode(child, depth + 1));
+                });
+                li.appendChild(ul);
+            }
+
+            return li;
+        }
+
+        function renderFeed() {
+            feedEl.innerHTML = '';
+            if (allPosts.length === 0) {
+                feedEl.innerHTML = '<div class="empty-state">no messages yet. be the first.</div>';
+                return;
+            }
+            const tree = buildTree(allPosts);
+            const ul = document.createElement('ul');
+            ul.className = 'thread';
+            tree.forEach(root => ul.appendChild(renderNode(root, 0)));
+            feedEl.appendChild(ul);
+        }
+
+        async function loadPosts() {
+            const { data, error } = await supabase
+                .from('board_posts')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                feedEl.innerHTML = '<div class="empty-state">failed to load board</div>';
+                console.error(error);
+                return;
+            }
+            allPosts = data || [];
+            renderFeed();
+        }
+
+        function closePanels() {
+            postPanel.classList.remove('open');
+            faqPanel.classList.remove('open');
+        }
+
+        function openPostPanel(replyId = null, replySubject = null) {
+            closePanels();
+            replyToId = replyId;
+            if (replyId) {
+                replyContextEl.textContent = `Replying to: ${replySubject}`;
+                fSubject.value = replySubject.startsWith('Re: ') ? replySubject : `Re: ${replySubject}`;
+            } else {
+                replyContextEl.textContent = '';
+                fSubject.value = '';
+            }
+            fStatus.textContent = '';
+            postPanel.classList.add('open');
+            postPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        postMsgBtn.addEventListener('click', () => openPostPanel());
+        fCancel.addEventListener('click', closePanels);
+
+        faqBtn.addEventListener('click', () => {
+            const isOpen = faqPanel.classList.contains('open');
+            closePanels();
+            if (!isOpen) faqPanel.classList.add('open');
+        });
+
+        feedEl.addEventListener('click', (e) => {
+            if (e.target.classList.contains('reply-link')) {
+                openPostPanel(e.target.dataset.replyId, e.target.dataset.replySubject);
+            }
+            if (e.target.classList.contains('subject')) {
+                const id = e.target.dataset.id;
+                const body = document.getElementById(`body-${id}`);
+                if (body) body.classList.toggle('open');
+            }
+        });
+
+        fSubmit.addEventListener('click', async () => {
+            const author = `Anonymous #${generateAnonId()}`;
+            const subject = fSubject.value.trim();
+            const message = fMessage.value.trim();
+
+            if (fHp.value.trim() !== '') {
+                fMessage.value = '';
+                return;
+            }
+
+            if (!subject || !message) {
+                fStatus.textContent = 'subject and message are required';
+                return;
+            }
+
+            const now = Date.now();
+            if (now - lastSubmitTime < SUBMIT_COOLDOWN_MS) {
+                const wait = Math.ceil((SUBMIT_COOLDOWN_MS - (now - lastSubmitTime)) / 1000);
+                fStatus.textContent = `wait ${wait}s before posting again`;
+                return;
+            }
+
+            fSubmit.disabled = true;
+            fStatus.textContent = 'posting...';
+
+            const { error } = await supabase
+                .from('board_posts')
+                .insert({
+                    author,
+                    subject,
+                    message,
+                    parent_id: replyToId
+                });
+
+            fSubmit.disabled = false;
+
+            if (error) {
+                fStatus.textContent = 'failed to post';
+                console.error(error);
+                return;
+            }
+
+            lastSubmitTime = now;
+            fSubject.value = '';
+            fMessage.value = '';
+            closePanels();
+            await loadPosts();
+        });
+
+        // живое обновление
+        supabase
+            .channel('board-feed')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'board_posts' }, () => {
+                loadPosts();
+            })
+            .subscribe();
+
+        loadPosts();
+    </script>
+</body>
+</html>

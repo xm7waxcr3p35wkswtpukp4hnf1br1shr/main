@@ -238,9 +238,6 @@
         <div class="panel" id="postPanel">
             <h2>Post New Message</h2>
             <div class="reply-context" id="replyContext"></div>
-            <label>Subject
-                <input type="text" id="fSubject" maxlength="200" />
-            </label>
             <label>Message
                 <textarea id="fMessage" maxlength="5000"></textarea>
             </label>
@@ -256,10 +253,10 @@
         <div class="panel" id="faqPanel">
             <h2>FAQ</h2>
             <div class="faq-text">
-                <p><strong>Who can post here?</strong> Anyone. No registration required.</p>
-                <p><strong>Are posts moderated?</strong> No. Say what you came to say.</p>
+                <p><strong>Who can post here?</strong> Anyone.</p>
+                <p><strong>Are posts moderated?</strong> No.</p>
                 <p><strong>How do I reply to a message?</strong> Click "reply" next to the message you want to answer.</p>
-                <p><strong>Can I delete my post?</strong> No. Once it's said, it's said.</p>
+                <p><strong>Can I delete my post?</strong> No.</p>
             </div>
         </div>
 
@@ -282,7 +279,6 @@
         const postMsgBtn = document.getElementById('postMsgBtn');
         const faqBtn = document.getElementById('faqBtn');
         const replyContextEl = document.getElementById('replyContext');
-        const fSubject = document.getElementById('fSubject');
         const fMessage = document.getElementById('fMessage');
         const fHp = document.getElementById('fHp');
         const fSubmit = document.getElementById('fSubmit');
@@ -303,6 +299,12 @@
 
         function generateAnonId() {
             return Math.random().toString(16).slice(2, 6);
+        }
+
+        function deriveSubject(message, isReply) {
+            const firstLine = message.split('\n')[0].trim();
+            const truncated = firstLine.length > 50 ? firstLine.slice(0, 50) + '…' : firstLine;
+            return isReply ? `Re: ${truncated}` : truncated || '(no subject)';
         }
 
         function formatTimestamp(dateStr) {
@@ -406,13 +408,7 @@
         function openPostPanel(replyId = null, replySubject = null) {
             closePanels();
             replyToId = replyId;
-            if (replyId) {
-                replyContextEl.textContent = `Replying to: ${replySubject}`;
-                fSubject.value = replySubject.startsWith('Re: ') ? replySubject : `Re: ${replySubject}`;
-            } else {
-                replyContextEl.textContent = '';
-                fSubject.value = '';
-            }
+            replyContextEl.textContent = replyId ? `Replying to: ${replySubject}` : '';
             fStatus.textContent = '';
             postPanel.classList.add('open');
             postPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -440,7 +436,6 @@
 
         fSubmit.addEventListener('click', async () => {
             const author = `Anonymous #${generateAnonId()}`;
-            const subject = fSubject.value.trim();
             const message = fMessage.value.trim();
 
             if (fHp.value.trim() !== '') {
@@ -448,10 +443,12 @@
                 return;
             }
 
-            if (!subject || !message) {
-                fStatus.textContent = 'subject and message are required';
+            if (!message) {
+                fStatus.textContent = 'message is required';
                 return;
             }
+
+            const subject = deriveSubject(message, !!replyToId);
 
             const now = Date.now();
             if (now - lastSubmitTime < SUBMIT_COOLDOWN_MS) {
@@ -481,17 +478,21 @@
             }
 
             lastSubmitTime = now;
-            fSubject.value = '';
             fMessage.value = '';
             closePanels();
             await loadPosts();
         });
 
-        // живое обновление
+        // живое обновление — новый пост приходит сразу через сокет,
+        // без повторного запроса к базе (быстрее и легче для сервера)
         supabase
             .channel('board-feed')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'board_posts' }, () => {
-                loadPosts();
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'board_posts' }, (payload) => {
+                const exists = allPosts.some(p => p.id === payload.new.id);
+                if (!exists) {
+                    allPosts.push(payload.new);
+                    renderFeed();
+                }
             })
             .subscribe();
 

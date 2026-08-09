@@ -16,6 +16,7 @@
             color: #fff;
             font-family: 'Times New Roman', Times, serif;
             padding: 20px;
+            padding-bottom: 90px;
         }
 
         h1 {
@@ -123,14 +124,14 @@
             display: block;
         }
 
-        /* --- форма --- */
+        /* --- панель FAQ --- */
         .panel {
             display: none;
             max-width: 600px;
             margin: 20px auto;
             border: 1px solid #444;
             padding: 16px;
-            background: #0a0a0a;
+            background: #000;
         }
 
         .panel.open {
@@ -142,59 +143,93 @@
             font-size: 1.2rem;
         }
 
-        .panel label {
-            display: block;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #aaa;
+        /* --- нижний composer-бар --- */
+        .composer {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            border-top: 1px solid #444;
+            padding: 10px 16px;
+            align-items: flex-end;
+            gap: 10px;
+            z-index: 50;
+            font-family: 'Times New Roman', Times, serif;
         }
 
-        .panel input, .panel textarea {
+        .composer.open {
+            display: flex;
+        }
+
+        .composer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
             width: 100%;
-            background: #111;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .composer-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .composer-reply {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 4px;
+            min-height: 1em;
+        }
+
+        .composer textarea {
+            width: 100%;
+            background: #000;
             border: 1px solid #444;
             color: #fff;
             font-family: inherit;
             font-size: 1rem;
-            padding: 6px;
-            margin-top: 4px;
+            padding: 8px;
+            resize: none;
+            height: 40px;
+            line-height: 1.3;
         }
 
-        .panel textarea {
-            min-height: 100px;
-            resize: vertical;
+        .composer textarea:focus {
+            outline: none;
+            border-color: #666;
         }
 
-        .panel .reply-context {
-            font-size: 0.85rem;
-            color: #888;
-            margin-bottom: 6px;
-        }
-
-        .panel-buttons {
-            margin-top: 12px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .panel-buttons button {
+        .composer button {
             font-family: inherit;
             background: #1a1a1a;
             border: 1px solid #555;
             color: #ddd;
-            padding: 6px 14px;
+            padding: 8px 16px;
             cursor: pointer;
+            height: 40px;
         }
 
-        .panel-buttons button:hover {
+        .composer button:hover {
             background: #262626;
             color: #fff;
         }
 
-        .panel-status {
-            font-size: 0.8rem;
+        .composer-close {
+            background: none !important;
+            border: none !important;
+            color: #666 !important;
+            padding: 8px 4px !important;
+            font-size: 1.1rem;
+        }
+
+        .composer-status {
+            font-size: 0.75rem;
             color: #888;
-            margin-top: 8px;
+            margin-top: 4px;
             min-height: 1em;
         }
 
@@ -234,22 +269,7 @@
 
     <div class="wrap">
 
-        <!-- Панель: новое сообщение -->
-        <div class="panel" id="postPanel">
-            <h2>Post New Message</h2>
-            <div class="reply-context" id="replyContext"></div>
-            <label>Message
-                <textarea id="fMessage" maxlength="5000"></textarea>
-            </label>
-            <input type="text" class="hp-field" id="fHp" tabindex="-1" autocomplete="off" />
-            <div class="panel-buttons">
-                <button id="fSubmit">Submit</button>
-                <button id="fCancel">Cancel</button>
-            </div>
-            <div class="panel-status" id="fStatus"></div>
-        </div>
-
-        <!-- Панель: FAQ -->
+        <!-- FAQ -->
         <div class="panel" id="faqPanel">
             <h2>FAQ</h2>
             <div class="faq-text">
@@ -265,6 +285,18 @@
         </div>
     </div>
 
+    <!-- Нижний composer-бар -->
+    <div class="composer" id="composer">
+        <div class="composer-inner">
+            <div class="composer-col">
+                <div class="composer-reply" id="composerReplyContext"></div>
+                <textarea id="fMessage" maxlength="5000"></textarea>
+                <div class="composer-status" id="fStatus"></div>
+            </div>
+            <input type="text" class="hp-field" id="fHp" tabindex="-1" autocomplete="off" />
+        </div>
+    </div>
+
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
@@ -274,15 +306,13 @@
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const feedEl = document.getElementById('feed');
-        const postPanel = document.getElementById('postPanel');
+        const composer = document.getElementById('composer');
         const faqPanel = document.getElementById('faqPanel');
         const postMsgBtn = document.getElementById('postMsgBtn');
         const faqBtn = document.getElementById('faqBtn');
-        const replyContextEl = document.getElementById('replyContext');
+        const replyContextEl = document.getElementById('composerReplyContext');
         const fMessage = document.getElementById('fMessage');
         const fHp = document.getElementById('fHp');
-        const fSubmit = document.getElementById('fSubmit');
-        const fCancel = document.getElementById('fCancel');
         const fStatus = document.getElementById('fStatus');
 
         let allPosts = [];
@@ -400,32 +430,47 @@
             renderFeed();
         }
 
-        function closePanels() {
-            postPanel.classList.remove('open');
+        function closeComposer() {
+            composer.classList.remove('open');
+        }
+
+        function closeFaq() {
             faqPanel.classList.remove('open');
         }
 
-        function openPostPanel(replyId = null, replySubject = null) {
-            closePanels();
+        function openComposer(replyId = null, replySubject = null) {
+            closeFaq();
             replyToId = replyId;
             replyContextEl.textContent = replyId ? `Replying to: ${replySubject}` : '';
             fStatus.textContent = '';
-            postPanel.classList.add('open');
-            postPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            composer.classList.add('open');
+            fMessage.focus();
         }
 
-        postMsgBtn.addEventListener('click', () => openPostPanel());
-        fCancel.addEventListener('click', closePanels);
+        postMsgBtn.addEventListener('click', () => {
+            if (composer.classList.contains('open') && !replyToId) {
+                closeComposer();
+            } else {
+                openComposer();
+            }
+        });
+
+        fMessage.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitMessage();
+            }
+        });
 
         faqBtn.addEventListener('click', () => {
             const isOpen = faqPanel.classList.contains('open');
-            closePanels();
+            closeFaq();
             if (!isOpen) faqPanel.classList.add('open');
         });
 
         feedEl.addEventListener('click', (e) => {
             if (e.target.classList.contains('reply-link')) {
-                openPostPanel(e.target.dataset.replyId, e.target.dataset.replySubject);
+                openComposer(e.target.dataset.replyId, e.target.dataset.replySubject);
             }
             if (e.target.classList.contains('subject')) {
                 const id = e.target.dataset.id;
@@ -434,7 +479,11 @@
             }
         });
 
-        fSubmit.addEventListener('click', async () => {
+        let isSubmitting = false;
+
+        async function submitMessage() {
+            if (isSubmitting) return;
+
             const author = `Anonymous #${generateAnonId()}`;
             const message = fMessage.value.trim();
 
@@ -457,7 +506,7 @@
                 return;
             }
 
-            fSubmit.disabled = true;
+            isSubmitting = true;
             fStatus.textContent = 'posting...';
 
             const { error } = await supabase
@@ -469,7 +518,7 @@
                     parent_id: replyToId
                 });
 
-            fSubmit.disabled = false;
+            isSubmitting = false;
 
             if (error) {
                 fStatus.textContent = 'failed to post';
@@ -479,9 +528,12 @@
 
             lastSubmitTime = now;
             fMessage.value = '';
-            closePanels();
+            replyToId = null;
+            replyContextEl.textContent = '';
+            fStatus.textContent = '';
+            fMessage.focus();
             await loadPosts();
-        });
+        }
 
         // живое обновление — новый пост приходит сразу через сокет,
         // без повторного запроса к базе (быстрее и легче для сервера)

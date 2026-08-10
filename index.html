@@ -7,6 +7,22 @@
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>gothviolence.com</title>
     <style>
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        img {
+            -webkit-user-drag: none;
+            user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+        }
+
         .bg-layer {
             position: fixed;
             top: 0;
@@ -84,21 +100,21 @@
 
     <div class="budka">
         <a href="https://t.me/sdfsfsfsfsdd" target="_blank" rel="noopener noreferrer">
-            <img src="image/index/budka.png" alt="">
+            <img src="image/index/budka.png" alt="" draggable="false" loading="eager" decoding="async" fetchpriority="high">
         </a>
     </div>
 
     <div class="doors-row">
         <a href="md/index/handler.html?v=vid_1.mp4">
-            <img src="image/index/door_1.png" alt="">
+            <img src="image/index/door_1.png" alt="" draggable="false" loading="eager" decoding="async" fetchpriority="high">
         </a>
         <a href="md/index/handler.html?v=vid_2.mp4">
-            <img src="image/index/door_2.png" alt="">
+            <img src="image/index/door_2.png" alt="" draggable="false" loading="eager" decoding="async" fetchpriority="high">
         </a>
     </div>
 
     <a href="https://mylittlemushroom.fun" target="_blank" rel="noopener noreferrer" class="center-link">
-        <img src="image/index/tshirt.png" alt="">
+        <img src="image/index/tshirt.png" alt="" draggable="false" loading="eager" decoding="async" fetchpriority="high">
     </a>
 
     <audio id="bg-track" src="md/index/aud_1.mp3" autoplay loop playsinline style="display: none;"></audio>
@@ -149,6 +165,10 @@
             function preloadImage(filename) {
                 return new Promise((resolve) => {
                     const img = new Image();
+                    if ('fetchPriority' in img) {
+                        img.fetchPriority = 'low';
+                    }
+                    img.decoding = 'async';
                     const url = IMAGE_FOLDER + filename;
                     img.onload = () => resolve(url);
                     img.onerror = () => resolve(null);
@@ -202,21 +222,22 @@
                 rafId = requestAnimationFrame(updateBackground);
             }
 
-            Promise.allSettled(imageFilenames.map(preloadImage)).then((results) => {
-                shuffled = shuffleArray(
-                    results
-                        .filter(r => r.status === 'fulfilled' && r.value !== null)
-                        .map(r => r.value)
-                );
+            function addImageToRotation(url) {
+                shuffled.push(url);
+                if (!ready) {
+                    layers[activeLayer].style.backgroundImage = `url('${url}')`;
+                    layers[activeLayer].style.opacity = '1';
+                    layers[1 - activeLayer].style.opacity = '0';
+                    currentImageIndex = shuffled.length - 1;
+                    ready = true;
+                    startAnimation();
+                }
+            }
 
-                if (shuffled.length === 0) return;
-
-                layers[activeLayer].style.backgroundImage = `url('${shuffled[0]}')`;
-                layers[activeLayer].style.opacity = '1';
-                layers[1 - activeLayer].style.opacity = '0';
-                currentImageIndex = 0;
-                ready = true;
-                startAnimation();
+            imageFilenames.forEach(filename => {
+                preloadImage(filename).then(url => {
+                    if (url) addImageToRotation(url);
+                });
             });
 
             const audio = document.getElementById('bg-track');

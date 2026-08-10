@@ -124,7 +124,6 @@
             display: block;
         }
 
-        /* --- панель FAQ --- */
         .panel {
             display: none;
             max-width: 600px;
@@ -143,7 +142,6 @@
             font-size: 1.2rem;
         }
 
-        /* --- нижний composer-бар --- */
         .composer {
             display: none;
             position: fixed;
@@ -226,7 +224,6 @@
             font-size: 1.1rem;
         }
 
-        /* honeypot */
         .hp-field {
             position: absolute;
             left: -9999px;
@@ -262,7 +259,6 @@
 
     <div class="wrap">
 
-        <!-- FAQ -->
         <div class="panel" id="faqPanel">
             <h2>FAQ</h2>
             <div class="faq-text">
@@ -278,7 +274,6 @@
         </div>
     </div>
 
-    <!-- Нижний composer-бар -->
     <div class="composer" id="composer">
         <div class="composer-inner">
             <div class="composer-col">
@@ -308,10 +303,9 @@
 
         let allPosts = [];
         let replyToId = null;
-        const BULLETS = ['&#9679;', '&#9675;', '&#9642;', '&#8226;']; // •, ◦, ▪, повтор дальше
-        const ownPostIds = new Set(); // чтобы не проигрывать звук на собственные сообщения
+        const BULLETS = ['&#9679;', '&#9675;', '&#9642;', '&#8226;'];
+        const ownPostIds = new Set();
 
-        // --- звуковое оповещение о новых сообщениях ---
         let audioCtx = null;
         function getAudioCtx() {
             if (!audioCtx) {
@@ -319,7 +313,6 @@
             }
             return audioCtx;
         }
-        // разблокируем звук по первому взаимодействию (требование браузеров)
         ['click', 'keydown', 'touchstart'].forEach(evt => {
             document.addEventListener(evt, () => {
                 const ctx = getAudioCtx();
@@ -384,7 +377,7 @@
                     roots.push(p);
                 }
             });
-            // сортируем: новые сверху (как "бамп" по последней активности было бы сложнее, делаем по дате создания корня)
+            
             const sortDesc = (arr) => arr.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             sortDesc(roots);
             byId.forEach(p => sortDesc(p.children));
@@ -528,7 +521,6 @@
 
             const subject = deriveSubject(message, !!replyId);
 
-            // --- мгновенный локальный рендер (оптимистичное обновление) ---
             const tempId = `temp-${Math.random().toString(36).slice(2)}`;
             const optimisticPost = {
                 id: tempId,
@@ -546,7 +538,6 @@
             replyContextEl.textContent = '';
             fMessage.focus();
 
-            // --- отправка в фоне, без блокировки интерфейса ---
             const { data, error } = await supabase
                 .from('board_posts')
                 .insert({ author, subject, message, parent_id: replyId })
@@ -554,14 +545,12 @@
                 .single();
 
             if (error) {
-                // откатываем оптимистичный пост, если отправка не удалась
                 allPosts = allPosts.filter(p => p.id !== tempId);
                 renderFeed();
                 console.error(error);
                 return;
             }
 
-            // заменяем временный пост на реальный (с настоящим id)
             const idx = allPosts.findIndex(p => p.id === tempId);
             if (idx !== -1) {
                 allPosts[idx] = data;
@@ -570,13 +559,9 @@
             renderFeed();
         }
 
-        // живое обновление — новый пост приходит сразу через сокет,
-        // без повторного запроса к базе (быстрее и легче для сервера)
         supabase
             .channel('board-feed')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'board_posts' }, (payload) => {
-                // если это подтверждение нашего же оптимистичного поста (пришло раньше ответа insert) —
-                // просто заменяем временную запись на настоящую, без звука и дублей
                 const tempIdx = allPosts.findIndex(p =>
                     typeof p.id === 'string' && p.id.startsWith('temp-') &&
                     p.message === payload.new.message && p.parent_id === payload.new.parent_id

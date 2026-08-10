@@ -146,8 +146,6 @@
 
             if (!layer1 || !layer2) return;
 
-            // Предзагружаем все картинки и оставляем в ротации только те,
-            // что реально загрузились (устраняет показ "битых" фонов).
             function preloadImage(filename) {
                 return new Promise((resolve) => {
                     const img = new Image();
@@ -184,13 +182,10 @@
                     const steps = Math.floor((now - lastChangeTime) / INTERVAL_MS);
                     let newIndex = currentImageIndex + steps;
 
-                    // Если пропущено больше одного полного цикла (например, вкладка долго
-                    // была неактивна), переперемешиваем нужное число раз, чтобы индекс
-                    // всегда оставался корректным и без повторов внутри цикла.
                     while (newIndex >= shuffled.length) {
                         shuffled = shuffleArray(shuffled);
                         newIndex -= shuffled.length;
-                        currentImageIndex = -1; // гарантируем срабатывание switchToImage
+                        currentImageIndex = -1;
                     }
 
                     if (newIndex !== currentImageIndex) {
@@ -244,6 +239,34 @@
                     }
                 });
             }
+
+            (function() {
+                const CLICKS_NEEDED = 10;
+                const RESET_TIMEOUT_MS = 4000;
+                let clickCount = 0;
+                let resetTimer = null;
+
+                function isInteractiveTarget(el) {
+                    return !!el.closest('a, audio, button, .budka, .doors-row, .center-link');
+                }
+
+                document.addEventListener('click', (e) => {
+                    if (isInteractiveTarget(e.target)) {
+                        clickCount = 0;
+                        clearTimeout(resetTimer);
+                        return;
+                    }
+
+                    clickCount++;
+                    clearTimeout(resetTimer);
+                    resetTimer = setTimeout(() => { clickCount = 0; }, RESET_TIMEOUT_MS);
+
+                    if (clickCount >= CLICKS_NEEDED) {
+                        clickCount = 0;
+                        window.location.href = 'board.html';
+                    }
+                });
+            })();
         })();
     </script>
 </body>
